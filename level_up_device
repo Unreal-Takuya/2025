@@ -1,0 +1,25 @@
+using { /Fortnite.com/Devices }
+using { /Verse.org/Simulation }
+using { /UnrealEngine.com/Temporary/Diagnostics }
+
+
+level_up_device := class(creative_device):
+
+    @editable StatCreator:stat_creator_device = stat_creator_device{}
+    @editable ClassChange1:class_and_team_selector_device=class_and_team_selector_device{}
+    @editable ClassChange2:class_and_team_selector_device=class_and_team_selector_device{}
+
+    OnBegin<override>()<suspends>:void=
+        StatCreator.LevelChangedEvent.Subscribe(OnLevelChanged);
+
+    OnLevelChanged<public>(Agent:?agent, CurrentLevel:int):void=
+        AllPlayers := GetPlayspace().GetPlayers()
+        for (Player : AllPlayers):
+            if(CurrentLevel = 2):
+                ClassChange1.ChangeClass(Player)
+                Print("レベル2")
+            else if(CurrentLevel = 4):        
+                ClassChange2.ChangeClass(Player)
+                Print("レベル4")
+            else:
+                block:
