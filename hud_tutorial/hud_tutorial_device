@@ -1,1 +1,122 @@
+using { /Fortnite.com/Devices }
+using { /Verse.org/Simulation }
+using { /UnrealEngine.com/Temporary/Diagnostics }
+using { /UnrealEngine.com/Temporary/UI }
+using { /Fortnite.com/UI }
+using { /UnrealEngine.com/Temporary/SpatialMath }
 
+hud_tutorial_device := class(creative_device):
+    @editable var Btn:button_device=button_device{}
+
+    # [player]はキー、canvasは値
+    var MaybeMyUIPerPlayer:[player]?canvas=map{}
+
+    OnBegin<override>()<suspends>:void=
+        Btn.InteractedWithEvent.Subscribe(BtnOn)
+        
+    #Widgetがプレイヤーに割り当てられているかの判定処理
+    BtnOn(Agent:agent):void=
+        if(Player:=player[Agent], PlayerUI:=GetPlayerUI[Player]):
+            # Widgetが割り当てられていれば取り除く
+            if(MyUI:=MaybeMyUIPerPlayer[Player]?):
+                Print("既にHudを持っています")
+                PlayerUI.RemoveWidget(MyUI)
+                if(set MaybeMyUIPerPlayer[Player]=false):
+            else:
+                # Widgetが割り当てられていなければ割り当てる
+                Print("Hudを持っていません")
+                var MyCanvas:canvas = MakeCanvas()
+                PlayerUI.AddWidget(MyCanvas, player_ui_slot{InputMode:=ui_input_mode.All})
+                if(set MaybeMyUIPerPlayer[Player]=option{MyCanvas}):
+        
+    @editable Btn1_Text:string = ""
+    @editable Btn2_Text:string = ""
+    @editable CloseBtn_Text:string = ""
+
+    # string型をmessage型に変換する関数
+    # <localizes>は入力したテキストを各ゲームプレイヤーが設定している言語に翻訳します。
+    S2M<localizes>(S:string):message="{S}"
+
+    # UIの作成
+    MakeCanvas():canvas=
+        Btn1:button_loud=button_loud{}
+        Btn1.SetText(S2M(Btn1_Text))
+        Btn1.OnClick().Subscribe(HandleBtn1)
+
+        Btn2:button_regular=button_regular{}
+        Btn2.SetText(S2M(Btn2_Text))
+        Btn2.OnClick().Subscribe(HandleBtn2)
+
+        CloseBtn:button_quiet=button_quiet{}
+        CloseBtn.SetText(S2M(CloseBtn_Text))
+        CloseBtn.OnClick().Subscribe(HandleClose)
+
+        # ボタン
+        StackBox:=stack_box:
+            Orientation:=orientation.Horizontal
+                Slots:=array:
+                    stack_box_slot:
+                        Widget:=Btn1                    
+                        Padding:=margin{Right:=50.0}
+                        HorizontalAlignment:=horizontal_alignment.Left
+                        VerticalAlignment:=vertical_alignment.Top
+                    stack_box_slot:
+                        Widget:=Btn2                    
+                        Padding:=margin{Left:=50.0}
+                        HorizontalAlignment:=horizontal_alignment.Left
+                        VerticalAlignment:=vertical_alignment.Top
+
+        MyOverlay:=overlay:
+            Slots:=array:
+                # 背景画像
+                overlay_slot:
+                    Widget:=texture_block{DefaultImage:=Cyber_BGImage, DefaultDesiredSize:=vector2{X:=800.0,Y:=450.0}}
+                    HorizontalAlignment:=horizontal_alignment.Left
+                    VerticalAlignment:=vertical_alignment.Top    
+                # StackBox
+                overlay_slot:    
+                    Widget:=StackBox
+                    HorizontalAlignment:=horizontal_alignment.Center
+                    VerticalAlignment:=vertical_alignment.Center
+                # 閉じるボタン   
+                overlay_slot:
+                    Widget:=CloseBtn
+                    Padding:=margin{Bottom:=30.0}
+                    HorizontalAlignment:=horizontal_alignment.Center
+                    VerticalAlignment:=vertical_alignment.Bottom
+                
+        MyCanvas:=canvas:
+            # キャンバスパネル
+            Slots:=array:
+                canvas_slot:
+                    Widget:=MyOverlay
+                    Anchors:=anchors{Minimum:=vector2{X:=0.5,Y:=0.5},Maximum:=vector2{X:=0.5,Y:=0.5}}
+                    Alignment:=vector2{X:=0.5,Y:=0.5}
+                    SizeToContent:=true
+
+        return MyCanvas
+    
+    @editable Btn1_Trigger:trigger_device=trigger_device{}
+    HandleBtn1(Wdata:widget_message):void=
+        Print("ボタン1")  
+        RemoveHUD(Wdata)
+        if(Agent:=agent[Wdata.Player]):
+            Btn1_Trigger.Trigger(Agent)
+
+    @editable Btn2_Trigger:trigger_device=trigger_device{}
+    HandleBtn2(Wdata:widget_message):void=
+        Print("ボタン2")  
+        RemoveHUD(Wdata)
+        if(Agent:=agent[Wdata.Player]):
+            Btn2_Trigger.Trigger(Agent)
+
+    HandleClose(Wdata:widget_message):void=
+        Print("閉じる")  
+        RemoveHUD(Wdata)
+
+    RemoveHUD(Wdata:widget_message):void=
+        Print("Widgetを取り除く")
+        if(Player:=Wdata.Player, PlayerUI:=GetPlayerUI[Player], SelectedButton:=Wdata.Source):
+            if(MyUI:=MaybeMyUIPerPlayer[Player]?):
+                PlayerUI.RemoveWidget(MyUI)
+                if(set MaybeMyUIPerPlayer[Player]=false){}
